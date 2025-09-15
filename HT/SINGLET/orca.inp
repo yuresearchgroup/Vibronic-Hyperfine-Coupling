@@ -1,14 +1,9 @@
-!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) RIJCOSX Normalprint Printbasis PrintMOs AUTOAUX EPR-II
+!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) RIJCOSX AUTOAUX
 
 %maxcore 4000
 
 %pal
 nprocs 104
-end
-
-%basis
-NewGTO P "aug-cc-pVTZ-J" end
-NEWGTO S "aug-cc-pVTZ-J" end
 end
 
 *xyzfile -2 3 
