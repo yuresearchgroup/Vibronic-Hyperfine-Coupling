@@ -1,4 +1,4 @@
-!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) nori
+!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) RIJCOSX Normalprint Printbasis PrintMOs AUTOAUX EPR-II
 
 %maxcore 4000
 
@@ -7,11 +7,11 @@ nprocs 104
 end
 
 %basis
-   NewGTO P "aug-cc-pVTZ-J" end
-   NewGTO S "aug-cc-pVTZ-J" end
+NewGTO P "aug-cc-pVTZ-J" end
+NEWGTO S "aug-cc-pVTZ-J" end
 end
 
-*xyzfile -2 3 
+*xyzfile -2 3
 
 %EPRNMR
         GTENSOR   TRUE
