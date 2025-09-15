@@ -1,9 +1,14 @@
-!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) RIJCOSX AUTOAUX
+!PBE0 aug-cc-pVTZ-J D3BJ CPCM(water) nori
 
 %maxcore 4000
 
 %pal
 nprocs 104
+end
+
+%basis
+   NewGTO P "aug-cc-pVTZ-J" end
+   NewGTO S "aug-cc-pVTZ-J" end
 end
 
 *xyzfile -2 3 
@@ -12,3 +17,4 @@ end
         GTENSOR   TRUE
         NUCLEI    = ALL H,C,N,O,P,S {AISO, ADIP, AORB, fgrad, rho}
 END
+
