@@ -14,7 +14,7 @@
 # ORCA.
 #
 # Verbose usage is as follows:
-# python3 ./test14.py -s HT/Raw_HF_S.dat -t HT/Raw_HF_T.dat -H --qs HT/HR_S2T.dat --qt HT/HR_T2S.dat -I --ps HT/HFCC_s1.out --pt HT/HFCC_t1.out -p 2
+# python3 ./Superfine.py --dE -0 --dEu 0 --dEl 0 --lst 0 --lts 0 --lu 0 --ll 0 --zp 0 -T 300 --dH 0.05 -s HT/Raw_HF_S.dat -t HT/Raw_HF_T.dat --ht --qs HT/HR_S2T.dat --qt HT/HR_T2S.dat --phase --ps HT/HFCC_s1.out --pt HT/HFCC_t1.out -p 2 --iso --index 0 --spin 0/0
 
 ##########################################################################
 ### FRONT MATTER #########################################################
@@ -48,6 +48,7 @@ from sympy.physics.quantum.cg import CG
 import sys
 import os
 import matplotlib.pyplot as plt
+from scipy.special import wofz
 from scipy.constants import h, hbar, c, m_p, Boltzmann, physical_constants
 
 pd.set_option('display.max_rows', None)  # Shows all rows
@@ -60,7 +61,7 @@ pd.set_option('display.max_colwidth', None)  # Prevents truncation of column con
 ##########################################################################
 
 # Define the progress bar function
-def print_progress_bar(iteration, total, prefix='', suffix='', length=50, fill='#'): #Change fill to whatever symbol is preferred. 
+def print_progress_bar(iteration, total, prefix='', suffix='', length=50, fill='#'): #Change fill to whatever symbol is preferred.
     percent = f"{100 * (iteration / float(total)):.1f}"
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
@@ -124,53 +125,26 @@ def parse_uhf_mos(file_path):
 
     return results
 
-##########################################################################
-### USER INPUTS ##########################################################
-##########################################################################
-
-dE = -0.065 # adiabatic energy difference between singlet and triplet state; sign dictates direction ie +ve means singlet is above triplet
-E_lambda_s = 0.0049 # Reorganisation energy in eV
-E_lambda_t = E_lambda_s
-Zeeman_Pulling_S = 0.0 
-
-# Triplet Splitting phenomena
-dE_upper_correction = 0.00 # Corrections are in eV
-dE_lower_correction = 4.33947058458868018102e-6
-E_lambda_upper_correction = 2.90124604798214617817e-6
-E_lambda_lower_correction = 0.0
-
-T = 300  # temperature in K
-
-# Functions important for DoS
-broadening_s = 8.617e-5 * T * E_lambda_s
-broadening_t = 8.617e-5 * T * E_lambda_t
-broadening_s_upper = 8.617e-5 * T * (E_lambda_s + E_lambda_upper_correction)
-broadening_s_lower = 8.617e-5 * T * (E_lambda_s - E_lambda_lower_correction)
-broadening_t_upper = 8.617e-5 * T * (E_lambda_t + E_lambda_upper_correction)
-broadening_t_lower = 8.617e-5 * T * (E_lambda_t - E_lambda_lower_correction)
-
-# Derivative spacing
-h = 0.05
+def fraction_type(x):
+    try:
+        return float(eval(x, {"__builtins__": None}, {}))
+    except Exception:
+        raise argparse.ArgumentTypeError(f"Invalid numeric expression: {x}")
 
 ##########################################################################
-### ISOTOPIC DEFINITIONS #################################################
+### QUANTUM SPIN DEFINITIONS #############################################
 ##########################################################################
 
-# Isotope definitions
-Isotope_check = true # Set to true if you have a single variation from abundant isotopes in your system.
-Isotope_atomnumber = 30 # Sets which atom should have its nuclear spin changed from its default value (that of the most abundant isotope). 
-#                         Code will interpret this in terms of atom index starting from 1, i.e. the 45th atom
-Isotope_atomspin = 5/2 # The nuclear spin value of the non-abundant-isotope of interest
-
-# Global nuclear spin quantum numbers, appended based on abundant chemical species. Change values here ONLY for global changes. Change 
+# Global nuclear spin quantum numbers, appended based on abundant chemical species. Change values here ONLY for global changes. Change
 # values above for singular isotopic shifts. Add elements to table as required.
 Spin_Quantum_Numbers_Isotope = {
-    "H": 0.5,
-    "C": 0.0, # C-13 is 1/2
-    "N": 1.0,
-    "O": 0.0, # O-17 is 5/2
-    "P": 0.5,
-    "S": 0.0  # S-33 is 3/2
+    "H" : 0.5,
+    "C" : 0.0, # C-13 is 1/2
+    "N" : 1.0,
+    "O" : 0.0, # O-17 is 5/2
+    "P" : 0.5,
+    "S" : 0.0, # S-33 is 3/2
+    "Mg": 0.0
 }
 
 ##########################################################################
@@ -197,7 +171,7 @@ parser.add_argument(
     help='The requested print level (0: minimal, 1: standard, 2: full).'
 )
 parser.add_argument(
-    '-H',
+    '--ht',
     action='store_true',
     help='Requests Herzberg-Teller contributions to the Hyperfine matrix element.'
 )
@@ -212,7 +186,7 @@ parser.add_argument(
     help='Path to the file output of HR.f90 for triplet --> singlet.'
 )
 parser.add_argument(
-    '-I',
+    '--phase',
     action='store_true',
     help='Requests a pairwise phase analysis through cosine similarities of dominant molecular orbital amplitudes.'
 )
@@ -226,16 +200,118 @@ parser.add_argument(
     type=str,
     help='Path to the [molden.input] for orbitals at the Franck-Condon point for the triplet state.'
 )
+parser.add_argument(
+    '--iso',
+    action='store_true',
+    help='Flag to tell program whether an atomic isotope should be calculated.'
+)
+parser.add_argument(
+    '--index',
+    type=int,
+    default=1,
+    help='Sets which atom index is an isotope; starts from 1, and is based on the hyperfine indexing (NOT molecular indexing)!'
+)
+parser.add_argument(
+    '--spin',
+    type=fraction_type,
+    default=0,
+    help='The nuclear spin value of the isotope of interest.'
+)
+parser.add_argument(
+    '--zp',
+    type=float,
+    default=0,
+    help='Zeeman pulling displacement NB. typically only required for large magnetic field effects. '
+)
+parser.add_argument(
+    '--dEu',
+    type=float,
+    required=True,
+    help='Triplet splitting in the adiabtic energy for the upper sublevel, in units of eV. '
+)
+parser.add_argument(
+    '--dEl',
+    type=float,
+    required=True,
+    help='Triplet splitting in the adiabatic energy for the lower sublevel, in units of eV. '
+)
+parser.add_argument(
+    '--lu',
+    type=float,
+    required=True,
+    help='Triplet splitting in the reorganisation energy for the upper sublevel, in units of eV. '
+)
+parser.add_argument(
+    '--ll',
+    type=float,
+    required=True,
+    help='Triplet splitting in the reorganisation energy for the lower sublevel, in units of eV. '
+)
+parser.add_argument(
+    '--dE',
+    type=float,
+    required=True,
+    help='Adiabatic energy difference between singlet and triplet state in eV; sign dictates direction ie. +ve means singlet is above the triplet.'
+)
+parser.add_argument(
+    '--lst',
+    type=float,
+    required=True,
+    help='Reorganisation energy in eV for the singlet to triplet transition.'
+)
+parser.add_argument(
+    '--lts',
+    type=float,
+    help='Reorganisation energy in eV for the triplet to singlet transition; note that if none is given l_ST == l_TS.'
+)
+parser.add_argument(
+    '-T',
+    type=float,
+    required=True,
+    help='Temperature of the system in K.'
+)
+parser.add_argument(
+    '--dH',
+    type=float,
+    required=True,
+    help='Derivative spacing in dimensionless units. '
+)
 
 # Set all parsers to variables for use in code
-args = parser.parse_args(
+args = parser.parse_args()
 Hyperfine_coupling_singlet_file_path = args.s
 Hyperfine_coupling_triplet_file_path = args.t
 PRINT = args.p
-HT = args.H
-PHASER = args.I
+HT = args.ht
+PHASER = args.phase
 Orbitals_singlet_file_path = args.ps
 Orbitals_triplet_file_path = args.pt
+Isotope_check = args.iso
+Isotope_atomnumber = args.index
+Isotope_atomspin = args.spin
+Zeeman_Pulling = args.zp
+dE_upper_correction = args.dEu
+dE_lower_correction = args.dEl
+E_lambda_upper_correction = args.lu
+E_lambda_lower_correction = args.ll
+dE = args.dE
+E_lambda_s = args.lst
+E_lambda_t = args.lts if args.lts is not None else args.lst
+if args.lts is None:
+    print(f"No l_ts was input. Setting l_st == l_ts ...")
+    print(f"l_ts = {E_lambda_t}")
+    print()
+T = args.T
+h = args.dH
+
+# Functions important for DoS
+broadening_s = 8.617e-5 * T * E_lambda_s
+broadening_t = 8.617e-5 * T * E_lambda_t
+broadening_s_upper = 8.617e-5 * T * (E_lambda_s + E_lambda_upper_correction)
+broadening_s_lower = 8.617e-5 * T * (E_lambda_s + E_lambda_lower_correction)
+broadening_t_upper = 8.617e-5 * T * (E_lambda_t + E_lambda_upper_correction)
+broadening_t_lower = 8.617e-5 * T * (E_lambda_t + E_lambda_lower_correction)
+
 
 ##########################################################################
 ### PROGRAM DEPENDANCIES #################################################
@@ -268,6 +344,11 @@ if HT:
         print("Phase tracking has not been requested...")
 print()
 
+if Isotope_check:
+    print("An isotope calculation was requested...")
+    print(f"Atom {Isotope_atomnumber} was amended to employ a spin of {Isotope_atomspin}. Make sure to check these numbers!")
+    print()
+
 ##########################################################################
 ### PHYSICAL CONSTANTS ###################################################
 ##########################################################################
@@ -297,15 +378,18 @@ try: # Formatting the singlet Hyperfine table for code
         lines = file.readlines()
 
     for line in lines: #Appends the spin numbers to the dataframe
-        parts = line.strip().split() 
+        parts = line.strip().split()
         element_name = re.sub(r'\d+', '', parts[0])
-        row = [element_name] + [float(x) for x in parts[1:]] 
+        row = [element_name] + [float(x) for x in parts[1:]]
         HF_C_S.append(row)
 
     # Saves everything to a formatted DataFrame
     df_s = pd.DataFrame(HF_C_S, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
     df_s["Spin Quantum Number"] = df_s["Species"].map(Spin_Quantum_Numbers_Isotope)
     species_list = df_s["Species"].unique().tolist()
+
+    if Isotope_check:
+        df_s.loc[Isotope_atomnumber - 1, "Spin Quantum Number"] = Isotope_atomspin
 
     # Print the full table depending on the requested print level
     if PRINT == 2:
@@ -319,20 +403,23 @@ except FileNotFoundError:
 except Exception as e:
     print(f"An error occurred: {e}")
 
-try: # Formatting the triplet Hyperfine table for code 
+try: # Formatting the triplet Hyperfine table for code
     with open(Hyperfine_coupling_triplet_file_path, 'r') as file:
         lines = file.readlines()
 
     for line in lines:
-        parts = line.strip().split() 
+        parts = line.strip().split()
         element_name = re.sub(r'\d+', '', parts[0])
-        row = [element_name] + [float(x) for x in parts[1:]] 
+        row = [element_name] + [float(x) for x in parts[1:]]
         HF_C_T.append(row)
 
     # Saves everything to a formatted DataFrame
     df_t = pd.DataFrame(HF_C_T, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
     df_t["Spin Quantum Number"] = df_t["Species"].map(Spin_Quantum_Numbers_Isotope)
     species_list = df_t["Species"].unique().tolist()
+
+    if Isotope_check:
+        df_t.loc[Isotope_atomnumber - 1, "Spin Quantum Number"] = Isotope_atomspin
 
     # Print the full table depending on the requested print level
     if PRINT == 2:
@@ -373,11 +460,6 @@ if HT:
 ##########################################################################
 ### FRANCK-CONDON ANALYSIS OF HYPERFINE COUPLING CONSTANTS ###############
 ##########################################################################
-
-# Define spins for requested isotope
-if Isotope_check:
-    df_s.loc[Isotope_atomnumber - 1, "Spin Quantum Number"] = Isotope_atomspin
-    df_t.loc[Isotope_atomnumber - 1, "Spin Quantum Number"] = Isotope_atomspin
 
 # RMS coupling matrix element
 RMS_Hyperfine_Coupling_singlet = 0
@@ -427,12 +509,12 @@ if PHASER:
     print("Singlet phase has been stored...")
     FC_T_results = parse_uhf_mos(Orbitals_triplet_file_path)
     print("Triplet phase has been stored...")
-    all_mos = sorted(set(FC_S_results.keys()) & set(FC_T_results.keys())) 
-    FC_S_coeffs = np.array([FC_S_results[mo]["coefficient"] for mo in all_mos]) 
-    FC_T_coeffs = np.array([FC_T_results[mo]["coefficient"] for mo in all_mos]) 
+    all_mos = sorted(set(FC_S_results.keys()) & set(FC_T_results.keys()))
+    FC_S_coeffs = np.array([FC_S_results[mo]["coefficient"] for mo in all_mos])
+    FC_T_coeffs = np.array([FC_T_results[mo]["coefficient"] for mo in all_mos])
     print()
 
-# Herzerg-Teller calculation of matrix elememt contribution. Phase tracking will be calculate concurrently with each mode if requested. 
+# Herzerg-Teller calculation of matrix elememt contribution. Phase tracking will be calculate concurrently with each mode if requested.
 if HT:
     S2T_mode_coupling_positive = []
     S2T_mode_coupling_negative = []
@@ -464,9 +546,9 @@ if HT:
                 lines = file.readlines()
 
             for line in lines:
-                parts = line.strip().split()  
+                parts = line.strip().split()
                 element_name = re.sub(r'\d+', '', parts[0])
-                row = [element_name] + [float(x) for x in parts[1:]] 
+                row = [element_name] + [float(x) for x in parts[1:]]
                 HF_C_positive.append(row)
 
             df_positive = pd.DataFrame(HF_C_positive, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
@@ -483,9 +565,9 @@ if HT:
                 lines = file.readlines()
 
             for line in lines:
-                parts = line.strip().split() 
+                parts = line.strip().split()
                 element_name = re.sub(r'\d+', '', parts[0])
-                row = [element_name] + [float(x) for x in parts[1:]] 
+                row = [element_name] + [float(x) for x in parts[1:]]
                 HF_C_negative.append(row)
 
             df_negative = pd.DataFrame(HF_C_negative, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
@@ -558,7 +640,7 @@ if HT:
                 print(f"\nError at index {i}: {e}")
             mode_coupling_positive = -mode_coupling_positive if flip_p else mode_coupling_positive
             mode_coupling_negative = -mode_coupling_negative if flip_m else mode_coupling_negative
-            
+
         dV = (mode_coupling_positive - mode_coupling_negative) / (2 * h)
         if PHASER:
             if flip_p != flip_m:
@@ -586,9 +668,9 @@ if HT:
                 lines = file.readlines()
 
             for line in lines:
-                parts = line.strip().split() 
+                parts = line.strip().split()
                 element_name = re.sub(r'\d+', '', parts[0])
-                row = [element_name] + [float(x) for x in parts[1:]] 
+                row = [element_name] + [float(x) for x in parts[1:]]
                 HF_C_positive.append(row)
 
             df_positive = pd.DataFrame(HF_C_positive, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
@@ -605,9 +687,9 @@ if HT:
                 lines = file.readlines()
 
             for line in lines:
-                parts = line.strip().split() 
+                parts = line.strip().split()
                 element_name = re.sub(r'\d+', '', parts[0])
-                row = [element_name] + [float(x) for x in parts[1:]] 
+                row = [element_name] + [float(x) for x in parts[1:]]
                 HF_C_negative.append(row)
 
             df_negative = pd.DataFrame(HF_C_negative, columns=["Species", "HF_C x", "HF_C y", "HF_C z"])
@@ -848,7 +930,7 @@ ENERGY_DENSITY_T2S_lower = dE_T2S_lower - E_lambda_t - E_lambda_lower_correction
 #Gaussian DoS
 FCWD_G_S2T_upper = np.sqrt(1 / (4 * np.pi * (E_lambda_s + dE_upper_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_upper**2) / (4 * (E_lambda_s + dE_upper_correction) * k_B * T))
 FCWD_G_S2T_middle = np.sqrt(1 / (4 * np.pi * E_lambda_s * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_middle**2) / (4 * E_lambda_s * k_B * T))
-FCWD_G_S2T_lower = np.sqrt(1 / (4 * np.pi * (E_lambda_t - dE_lower_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_lower**2) / (4 * (E_lambda_s - dE_lower_correction) * k_B * T))
+FCWD_G_S2T_lower = np.sqrt(1 / (4 * np.pi * (E_lambda_s - dE_lower_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_lower**2) / (4 * (E_lambda_s - dE_lower_correction) * k_B * T))
 FCWD_G_T2S_upper = np.sqrt(1 / (4 * np.pi * (E_lambda_t + dE_upper_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_upper**2) / (4 * (E_lambda_t + dE_upper_correction) * k_B * T))
 FCWD_G_T2S_middle = np.sqrt(1 / (4 * np.pi * E_lambda_t * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_middle**2) / (4 * E_lambda_t * k_B * T))
 FCWD_G_T2S_lower = np.sqrt(1 / (4 * np.pi * (E_lambda_t - dE_lower_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_lower**2) / (4 * (E_lambda_t - dE_lower_correction) * k_B * T))
@@ -861,13 +943,13 @@ FCWD_L_T2S_upper = (1 / np.pi) * (broadening_t_upper / (ENERGY_DENSITY_T2S_upper
 FCWD_L_T2S_middle = (1 / np.pi) * (broadening_t / (ENERGY_DENSITY_T2S_middle**2 + broadening_t**2))
 FCWD_L_T2S_lower = (1 / np.pi) * (broadening_t_lower / (ENERGY_DENSITY_T2S_lower**2 + broadening_t_lower**2))
 
-# Voigt DoS (G x V)
-FCWD_V_S2T_upper = FCWD_G_S2T_upper * FCWD_L_S2T_upper
-FCWD_V_S2T_middle = FCWD_G_S2T_middle * FCWD_L_S2T_middle
-FCWD_V_S2T_lower = FCWD_G_S2T_lower * FCWD_L_S2T_lower
-FCWD_V_T2S_upper = FCWD_G_T2S_upper * FCWD_L_T2S_upper
-FCWD_V_T2S_middle = FCWD_G_T2S_middle * FCWD_L_T2S_middle
-FCWD_V_T2S_lower = FCWD_G_T2S_lower * FCWD_L_T2S_lower
+# Voigt DoS (G (x) V)
+FCWD_V_S2T_upper = np.real(wofz((ENERGY_DENSITY_S2T_upper + (1j * broadening_s_upper)) / (np.sqrt(4 * (E_lambda_s + dE_upper_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_s + dE_upper_correction) * k_B * T) )
+FCWD_V_S2T_middle = np.real(wofz((ENERGY_DENSITY_S2T_middle + (1j * broadening_s)) / (np.sqrt(4 * E_lambda_s * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_s * k_B * T) )
+FCWD_V_S2T_lower = np.real(wofz((ENERGY_DENSITY_S2T_lower + (1j * broadening_s_lower)) / (np.sqrt(4 * (E_lambda_s - dE_lower_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_s - dE_lower_correction) * k_B * T) )
+FCWD_V_T2S_upper = np.real(wofz((ENERGY_DENSITY_T2S_upper + (1j * broadening_t_upper)) / (np.sqrt(4 * (E_lambda_t + dE_upper_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_t + dE_upper_correction) * k_B * T) )
+FCWD_V_T2S_middle = np.real(wofz((ENERGY_DENSITY_T2S_middle + (1j * broadening_t)) / (np.sqrt(4 * E_lambda_t * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_t * k_B * T) )
+FCWD_V_T2S_lower = np.real(wofz((ENERGY_DENSITY_T2S_lower + (1j * broadening_t_lower)) / (np.sqrt(4 * (E_lambda_t - dE_lower_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_t - dE_lower_correction) * k_B * T) )
 
 if PRINT >= 1:
     print()
