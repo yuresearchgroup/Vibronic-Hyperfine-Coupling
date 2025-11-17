@@ -50,7 +50,9 @@ import os
 import matplotlib.pyplot as plt
 from scipy.special import wofz
 from scipy.constants import h, hbar, c, m_p, Boltzmann, physical_constants
+import time
 
+start_time = time.time()
 pd.set_option('display.max_rows', None)  # Shows all rows
 pd.set_option('display.max_columns', None)  # Shows all columns
 pd.set_option('display.width', None)  # Avoids line wrapping
@@ -642,9 +644,6 @@ if HT:
             mode_coupling_negative = -mode_coupling_negative if flip_m else mode_coupling_negative
 
         dV = (mode_coupling_positive - mode_coupling_negative) / (2 * h)
-        if PHASER:
-            if flip_p != flip_m:
-                dV = -dV
         FULL.append([MODE + 1, dV])
 
     print()
@@ -764,9 +763,6 @@ if HT:
             mode_coupling_negative = -mode_coupling_negative if flip_m else mode_coupling_negative
 
         dV = (mode_coupling_positive - mode_coupling_negative) / (2 * h)
-        if PHASER:
-            if flip_p != flip_m:
-                dV = -dV
         if MODE < len(FULL):
             FULL[MODE].append(dV)
         else:
@@ -1191,5 +1187,10 @@ print(" ")
 ##########################################################################
 ### END ##################################################################
 ##########################################################################
+
+elapsed = time.time() - start_time
+hours, rem = divmod(elapsed, 3600)
+minutes, seconds = divmod(rem, 60)
+print(f"\nExecution time: {int(hours)}h {int(minutes)}m {seconds:.2f}s")
 
 print("All done. Good luck!")
