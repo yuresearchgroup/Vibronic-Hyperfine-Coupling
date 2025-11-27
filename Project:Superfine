@@ -306,15 +306,6 @@ if args.lts is None:
 T = args.T
 h = args.dH
 
-# Functions important for DoS
-broadening_s = 8.617e-5 * T * E_lambda_s
-broadening_t = 8.617e-5 * T * E_lambda_t
-broadening_s_upper = 8.617e-5 * T * (E_lambda_s + E_lambda_upper_correction)
-broadening_s_lower = 8.617e-5 * T * (E_lambda_s + E_lambda_lower_correction)
-broadening_t_upper = 8.617e-5 * T * (E_lambda_t + E_lambda_upper_correction)
-broadening_t_lower = 8.617e-5 * T * (E_lambda_t + E_lambda_lower_correction)
-
-
 ##########################################################################
 ### PROGRAM DEPENDANCIES #################################################
 ##########################################################################
@@ -908,50 +899,96 @@ if HT:
 ##########################################################################
 
 # Adiabatic Energy definitions
-dE_S2T_upper = dE + dE_upper_correction + Zeeman_Pulling
-dE_S2T_middle = dE + Zeeman_Pulling
-dE_S2T_lower = dE - dE_lower_correction + Zeeman_Pulling
-dE_T2S_upper = -dE_S2T_upper
-dE_T2S_middle = -dE_S2T_middle
-dE_T2S_lower = -dE_S2T_lower
+dE_S2T_upper = (dE + Zeeman_Pulling) + dE_upper_correction
+dE_S2T_middle = (dE + Zeeman_Pulling)
+dE_S2T_lower = (dE + Zeeman_Pulling) - dE_lower_correction
+dE_T2S_upper = (-dE + Zeeman_Pulling) + dE_upper_correction
+dE_T2S_middle = (-dE + Zeeman_Pulling)
+dE_T2S_lower = (-dE + Zeeman_Pulling) - dE_lower_correction
+
+# Lambda corrections
+E_lambda_s_upper = E_lambda_s + E_lambda_upper_correction
+E_lambda_s_middle = E_lambda_s
+E_lambda_s_lower = E_lambda_s - E_lambda_lower_correction
+E_lambda_t_upper = E_lambda_t + E_lambda_upper_correction
+E_lambda_t_middle = E_lambda_t
+E_lambda_t_lower = E_lambda_t - E_lambda_lower_correction
 
 # Energy Densities (E - \lambda)
-ENERGY_DENSITY_S2T_upper = dE_S2T_upper - E_lambda_s + E_lambda_upper_correction
-ENERGY_DENSITY_S2T_middle = dE_S2T_middle - E_lambda_s
-ENERGY_DENSITY_S2T_lower = dE_S2T_lower - E_lambda_s - E_lambda_lower_correction
-ENERGY_DENSITY_T2S_upper = dE_T2S_upper - E_lambda_t + E_lambda_upper_correction
-ENERGY_DENSITY_T2S_middle = dE_T2S_middle - E_lambda_t
-ENERGY_DENSITY_T2S_lower = dE_T2S_lower - E_lambda_t - E_lambda_lower_correction
+ENERGY_DENSITY_S2T_upper = dE_S2T_upper - E_lambda_s_upper
+ENERGY_DENSITY_S2T_middle = dE_S2T_middle - E_lambda_s_middle
+ENERGY_DENSITY_S2T_lower = dE_S2T_lower - E_lambda_s_lower
+ENERGY_DENSITY_T2S_upper = dE_T2S_upper - E_lambda_t_upper
+ENERGY_DENSITY_T2S_middle = dE_T2S_middle - E_lambda_t_middle
+ENERGY_DENSITY_T2S_lower = dE_T2S_lower - E_lambda_t_lower
 
 #Gaussian DoS
-FCWD_G_S2T_upper = np.sqrt(1 / (4 * np.pi * (E_lambda_s + dE_upper_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_upper**2) / (4 * (E_lambda_s + dE_upper_correction) * k_B * T))
-FCWD_G_S2T_middle = np.sqrt(1 / (4 * np.pi * E_lambda_s * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_middle**2) / (4 * E_lambda_s * k_B * T))
-FCWD_G_S2T_lower = np.sqrt(1 / (4 * np.pi * (E_lambda_s - dE_lower_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_lower**2) / (4 * (E_lambda_s - dE_lower_correction) * k_B * T))
-FCWD_G_T2S_upper = np.sqrt(1 / (4 * np.pi * (E_lambda_t + dE_upper_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_upper**2) / (4 * (E_lambda_t + dE_upper_correction) * k_B * T))
-FCWD_G_T2S_middle = np.sqrt(1 / (4 * np.pi * E_lambda_t * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_middle**2) / (4 * E_lambda_t * k_B * T))
-FCWD_G_T2S_lower = np.sqrt(1 / (4 * np.pi * (E_lambda_t - dE_lower_correction) * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_lower**2) / (4 * (E_lambda_t - dE_lower_correction) * k_B * T))
+FCWD_G_S2T_upper = np.sqrt(1 / (4 * np.pi * E_lambda_s_upper * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_upper**2) / (4 * E_lambda_s_upper * k_B * T))
+FCWD_G_S2T_middle = np.sqrt(1 / (4 * np.pi * E_lambda_s_middle * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_middle**2) / (4 * E_lambda_s_middle * k_B * T))
+FCWD_G_S2T_lower = np.sqrt(1 / (4 * np.pi * E_lambda_s_lower * k_B * T) ) * np.exp(-(ENERGY_DENSITY_S2T_lower**2) / (4 * E_lambda_s_lower * k_B * T))
+FCWD_G_T2S_upper = np.sqrt(1 / (4 * np.pi * E_lambda_t_upper * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_upper**2) / (4 * E_lambda_t_upper * k_B * T))
+FCWD_G_T2S_middle = np.sqrt(1 / (4 * np.pi * E_lambda_t_middle * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_middle**2) / (4 * E_lambda_t_middle * k_B * T))
+FCWD_G_T2S_lower = np.sqrt(1 / (4 * np.pi * E_lambda_t_lower * k_B * T) ) * np.exp(-(ENERGY_DENSITY_T2S_lower**2) / (4 * E_lambda_t_lower * k_B * T))
 
 # Lorentzian DoS
+broadening_s_upper = 8.617e-5 * T * E_lambda_s_upper
+broadening_s_middle = 8.617e-5 * T * E_lambda_s_middle
+broadening_s_lower = 8.617e-5 * T * E_lambda_s_lower
+broadening_t_upper = 8.617e-5 * T * E_lambda_t_upper
+broadening_t_middle = 8.617e-5 * T * E_lambda_t_middle
+broadening_t_lower = 8.617e-5 * T * E_lambda_t_lower
+
 FCWD_L_S2T_upper = (1 / np.pi) * (broadening_s_upper / (ENERGY_DENSITY_S2T_upper**2 + broadening_s_upper**2))
-FCWD_L_S2T_middle = (1 / np.pi) * (broadening_s / (ENERGY_DENSITY_S2T_middle**2 + broadening_s**2))
+FCWD_L_S2T_middle = (1 / np.pi) * (broadening_s_middle / (ENERGY_DENSITY_S2T_middle**2 + broadening_s_middle**2))
 FCWD_L_S2T_lower = (1 / np.pi) * (broadening_s_lower / (ENERGY_DENSITY_S2T_lower**2 + broadening_s_lower**2))
 FCWD_L_T2S_upper = (1 / np.pi) * (broadening_t_upper / (ENERGY_DENSITY_T2S_upper**2 + broadening_t_upper**2))
-FCWD_L_T2S_middle = (1 / np.pi) * (broadening_t / (ENERGY_DENSITY_T2S_middle**2 + broadening_t**2))
+FCWD_L_T2S_middle = (1 / np.pi) * (broadening_t_middle / (ENERGY_DENSITY_T2S_middle**2 + broadening_t_middle**2))
 FCWD_L_T2S_lower = (1 / np.pi) * (broadening_t_lower / (ENERGY_DENSITY_T2S_lower**2 + broadening_t_lower**2))
 
 # Voigt DoS (G (x) V)
-FCWD_V_S2T_upper = np.real(wofz((ENERGY_DENSITY_S2T_upper + (1j * broadening_s_upper)) / (np.sqrt(4 * (E_lambda_s + dE_upper_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_s + dE_upper_correction) * k_B * T) )
-FCWD_V_S2T_middle = np.real(wofz((ENERGY_DENSITY_S2T_middle + (1j * broadening_s)) / (np.sqrt(4 * E_lambda_s * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_s * k_B * T) )
-FCWD_V_S2T_lower = np.real(wofz((ENERGY_DENSITY_S2T_lower + (1j * broadening_s_lower)) / (np.sqrt(4 * (E_lambda_s - dE_lower_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_s - dE_lower_correction) * k_B * T) )
-FCWD_V_T2S_upper = np.real(wofz((ENERGY_DENSITY_T2S_upper + (1j * broadening_t_upper)) / (np.sqrt(4 * (E_lambda_t + dE_upper_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_t + dE_upper_correction) * k_B * T) )
-FCWD_V_T2S_middle = np.real(wofz((ENERGY_DENSITY_T2S_middle + (1j * broadening_t)) / (np.sqrt(4 * E_lambda_t * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_t * k_B * T) )
-FCWD_V_T2S_lower = np.real(wofz((ENERGY_DENSITY_T2S_lower + (1j * broadening_t_lower)) / (np.sqrt(4 * (E_lambda_t - dE_lower_correction) * k_B * T)))) / (np.sqrt(4 * np.pi * (E_lambda_t - dE_lower_correction) * k_B * T) )
+FCWD_V_S2T_upper = np.real(wofz((ENERGY_DENSITY_S2T_upper + (1j * broadening_s_upper)) / (np.sqrt(4 * E_lambda_s_upper * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_s_upper * k_B * T) )
+FCWD_V_S2T_middle = np.real(wofz((ENERGY_DENSITY_S2T_middle + (1j * broadening_s_middle)) / (np.sqrt(4 * E_lambda_s_middle * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_s_middle * k_B * T) )
+FCWD_V_S2T_lower = np.real(wofz((ENERGY_DENSITY_S2T_lower + (1j * broadening_s_lower)) / (np.sqrt(4 * E_lambda_s_lower * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_s_lower * k_B * T) )
+FCWD_V_T2S_upper = np.real(wofz((ENERGY_DENSITY_T2S_upper + (1j * broadening_t_upper)) / (np.sqrt(4 * E_lambda_t_upper * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_t_upper * k_B * T) )
+FCWD_V_T2S_middle = np.real(wofz((ENERGY_DENSITY_T2S_middle + (1j * broadening_t_middle)) / (np.sqrt(4 * E_lambda_t_middle * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_t_middle * k_B * T) )
+FCWD_V_T2S_lower = np.real(wofz((ENERGY_DENSITY_T2S_lower + (1j * broadening_t_lower)) / (np.sqrt(4 * E_lambda_t_lower * k_B * T)))) / (np.sqrt(4 * np.pi * E_lambda_t_lower * k_B * T) )
+
+print()
+print("*" * 64)
+print("*" * 13 + "           INPUT PARAMETERS          " + "*" * 13)
+print("*" * 64)
+print(f"Energy gap S-T                                 {dE} (eV)")
+print(f"Energy gap (upper correction)                  {dE_upper_correction} (eV)")
+print(f"Energy gap (lower correction)                  {dE_lower_correction} (eV)")
+print()
+print(f"Lambda_S-T                                     {E_lambda_s} (eV)")
+print(f"Lambda_T-S                                     {E_lambda_t} (eV)")
+print(f"Lambda     (upper correction)                  {E_lambda_upper_correction} (eV)")
+print(f"Lambda     (lower correction)                  {E_lambda_lower_correction} (eV)")
+
+if PRINT == 2:
+    print()
+    print(f"Displaced energy gap              S --> T(+) = {dE_S2T_upper} ")
+    print(f"                                  S --> T(0) = {dE_S2T_middle} ")
+    print(f"                                  S --> T(-) = {dE_S2T_lower} ")
+    print(f"                               T(+) --> S    = {dE_T2S_upper} ")
+    print(f"                               T(0) --> S    = {dE_T2S_middle} ")
+    print(f"                               T(-) --> S    = {dE_T2S_lower} ")
+    print()
+    print(f"Displaced reorganisation energy   S --> T(+) = {E_lambda_s_upper} ")
+    print(f"                                  S --> T(0) = {E_lambda_s_middle} ")
+    print(f"                                  S --> T(-) = {E_lambda_s_lower} ")
+    print(f"                               T(+) --> S    = {E_lambda_t_upper} ")
+    print(f"                               T(0) --> S    = {E_lambda_t_middle} ")
+    print(f"                               T(-) --> S    = {E_lambda_t_lower} ")
 
 if PRINT >= 1:
     print()
     print("*" * 64)
-    print("*" * 13 + "         ENERGY DENSITIES            " + "*" * 13)
+    print("*" * 13 + "           ENERGY DENSITIES          " + "*" * 13)
     print("*" * 64)
+
+if PRINT >= 1:
     print()
     print(f"Energy Density Functions:         S --> T(+) = {ENERGY_DENSITY_S2T_upper} ")
     print(f"                                  S --> T(0) = {ENERGY_DENSITY_S2T_middle} ")
@@ -994,78 +1031,57 @@ if PRINT >= 1:
 ThermalCorrection1_2 = np.exp(-(dE_lower_correction) / (k_B * T))
 ThermalCorrection1_3 = np.exp(-(dE_lower_correction + dE_upper_correction) / (k_B * T))
 
-if dE > 0: # Damps T --> S rates due to uphill transitions
-    # Rates due to Gaussian broadening
+if dE_S2T_upper > 0:
     rate_HF_G_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_upper
-    rate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_middle
-    rate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_G_S2T = (rate_HF_G_S2T_upper + (rate_HF_G_S2T_middle*ThermalCorrection1_2) + (rate_HF_G_S2T_lower*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
     rate_HF_G_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-    rate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-    rate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_G_T2S = (rate_HF_G_T2S_upper + (rate_HF_G_T2S_middle*ThermalCorrection1_2) + (rate_HF_G_T2S_lower*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
-
-    # Rates due to Lorentzian broadening
     rate_HF_L_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_upper
-    rate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_middle
-    rate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_L_S2T = (rate_HF_L_S2T_upper + (rate_HF_L_S2T_middle*ThermalCorrection1_2) + (rate_HF_L_S2T_lower*ThermalCorrection1_2)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
     rate_HF_L_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-    rate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_middle  * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-    rate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_L_T2S = (rate_HF_L_T2S_upper + (rate_HF_L_T2S_middle*ThermalCorrection1_2) + (rate_HF_L_T2S_lower*ThermalCorrection1_2)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-    # Rates due to Voigt broadening
     rate_HF_V_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_upper
-    rate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_middle
-    rate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_V_S2T = (rate_HF_V_S2T_upper + (rate_HF_V_S2T_middle*ThermalCorrection1_2) + (rate_HF_V_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
     rate_HF_V_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-    rate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-    rate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_V_T2S = (rate_HF_V_T2S_upper + (rate_HF_V_T2S_middle*ThermalCorrection1_2) + (rate_HF_V_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-else: # Damps S --> T rates due to uphill transitions
-    # Rates due to Gaussian broadening
+else:
     rate_HF_G_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-    rate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-    rate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_G_S2T = (rate_HF_G_S2T_upper + (rate_HF_G_S2T_middle*ThermalCorrection1_2) + (rate_HF_G_S2T_lower*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
     rate_HF_G_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_upper
-    rate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_middle
-    rate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_G_T2S = (rate_HF_G_T2S_upper + (rate_HF_G_T2S_middle*ThermalCorrection1_2) + (rate_HF_G_T2S_lower*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
-
-    # Rates due to Lorentzian broadening
     rate_HF_L_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-    rate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-    rate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_L_S2T = (rate_HF_L_S2T_upper + (rate_HF_L_S2T_middle*ThermalCorrection1_2) + (rate_HF_L_S2T_lower*ThermalCorrection1_2)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
     rate_HF_L_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_upper
-    rate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_middle
-    rate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_L_T2S = (rate_HF_L_T2S_upper + (rate_HF_L_T2S_middle*ThermalCorrection1_2) + (rate_HF_L_T2S_lower*ThermalCorrection1_2)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-    # Rates due to Voigt broadening
     rate_HF_V_S2T_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-    rate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-    rate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_V_S2T = (rate_HF_V_S2T_upper + (rate_HF_V_S2T_middle*ThermalCorrection1_2) + (rate_HF_V_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
     rate_HF_V_T2S_upper = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_upper
+
+if dE_S2T_middle > 0:
+    rate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_middle
+    rate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+    rate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_middle
+    rate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+    rate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_middle
+    rate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+else:
+    rate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
+    rate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_middle
+    rate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
+    rate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_middle
+    rate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
     rate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_middle
+
+if dE_S2T_lower > 0:
+    rate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_lower
+    rate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+    rate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_lower
+    rate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+    rate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_lower
+    rate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+else:
+    rate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_G_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
+    rate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_G_T2S_lower
+    rate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_L_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
+    rate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_L_T2S_lower
+    rate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_singlet)**2 * FCWD_V_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
     rate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * (RMS_Hyperfine_Coupling_triplet)**2 * FCWD_V_T2S_lower
-    # Sublevel averaging w/ thermal corrections
-    rate_HF_V_T2S = (rate_HF_V_T2S_upper + (rate_HF_V_T2S_middle*ThermalCorrection1_2) + (rate_HF_V_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+
+rate_HF_G_S2T = (rate_HF_G_S2T_lower + (rate_HF_G_S2T_middle*ThermalCorrection1_2) + (rate_HF_G_S2T_upper*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
+rate_HF_G_T2S = (rate_HF_G_T2S_lower + (rate_HF_G_T2S_middle*ThermalCorrection1_2) + (rate_HF_G_T2S_upper*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
+rate_HF_L_S2T = (rate_HF_L_S2T_lower + (rate_HF_L_S2T_middle*ThermalCorrection1_2) + (rate_HF_L_S2T_upper*ThermalCorrection1_2)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
+rate_HF_L_T2S = (rate_HF_L_T2S_lower + (rate_HF_L_T2S_middle*ThermalCorrection1_2) + (rate_HF_L_T2S_upper*ThermalCorrection1_2)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
+rate_HF_V_S2T = (rate_HF_V_S2T_lower + (rate_HF_V_S2T_middle*ThermalCorrection1_2) + (rate_HF_V_S2T_upper*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
+rate_HF_V_T2S = (rate_HF_V_T2S_lower + (rate_HF_V_T2S_middle*ThermalCorrection1_2) + (rate_HF_V_T2S_upper*ThermalCorrection1_3)) / (1 + ThermalCorrection1_2 + ThermalCorrection1_3)
 
 # Rates are recalculated if Herzberg-Teller contributions are requested
 if HT:
@@ -1073,79 +1089,57 @@ if HT:
     HT_COUPLING_SQUARED_SINGLET = RMS_Hyperfine_Coupling_singlet**2 + HT_pure_singlet_contribution**2 + (2 * RMS_Hyperfine_Coupling_singlet * HT_pure_singlet_contribution)
     HT_COUPLING_SQUARED_TRIPLET = RMS_Hyperfine_Coupling_triplet**2 + HT_pure_triplet_contribution**2 + (2 * RMS_Hyperfine_Coupling_triplet * HT_pure_triplet_contribution)
 
-    if dE > 0: # Damps T --> S rates due to uphill transitions
-        # Rates due to Gaussian broadening
+    if dE_S2T_upper > 0:
         HTrate_HF_G_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_upper
-        HTrate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_middle
-        HTrate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_G_S2T = (HTrate_HF_G_S2T_upper + (HTrate_HF_G_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_G_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_G_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-        HTrate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-        HTrate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_G_T2S = (HTrate_HF_G_T2S_upper + (HTrate_HF_G_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_G_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-        # Rates due to Lorentzian broadening
         HTrate_HF_L_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_upper
-        HTrate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_middle
-        HTrate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_L_S2T = (HTrate_HF_L_S2T_upper + (HTrate_HF_L_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_L_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_L_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-        HTrate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-        HTrate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_L_T2S = (HTrate_HF_L_T2S_upper + (HTrate_HF_L_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_L_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-        # Rates due to Voigt broadening
         HTrate_HF_V_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_upper
-        HTrate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_middle
-        HTrate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_V_S2T = (HTrate_HF_V_S2T_upper + (HTrate_HF_V_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_V_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_V_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_upper * np.exp((-1 * dE_T2S_upper) / (k_B * T))
-        HTrate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
-        HTrate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_V_T2S = (HTrate_HF_V_T2S_upper + (HTrate_HF_V_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_V_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-    else: # Damps S --> T rates due to uphill transitions
-        # Rates due to Gaussian broadening
+    else:
         HTrate_HF_G_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-        HTrate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-        HTrate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_G_S2T = (HTrate_HF_G_S2T_upper + (HTrate_HF_G_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_G_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_G_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_upper
-        HTrate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_middle
-        HTrate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_G_T2S = (HTrate_HF_G_T2S_upper + (HTrate_HF_G_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_G_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-        # Rates due to Lorentzian broadening
         HTrate_HF_L_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-        HTrate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-        HTrate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_L_S2T = (HTrate_HF_L_S2T_upper + (HTrate_HF_L_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_L_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_L_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_upper
-        HTrate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_middle
-        HTrate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_L_T2S = (HTrate_HF_L_T2S_upper + (HTrate_HF_L_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_L_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
-
-        # Rates due to Voigt broadening
         HTrate_HF_V_S2T_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_upper * np.exp((-1 * dE_S2T_upper) / (k_B * T))
-        HTrate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
-        HTrate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_V_S2T = (HTrate_HF_V_S2T_upper + (HTrate_HF_V_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_V_S2T_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
         HTrate_HF_V_T2S_upper = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_upper
+
+    if dE_S2T_middle > 0:
+        HTrate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_middle
+        HTrate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+        HTrate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_middle
+        HTrate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+        HTrate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_middle
+        HTrate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_middle * np.exp((-1 * dE_T2S_middle) / (k_B * T))
+    else:
+        HTrate_HF_G_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
+        HTrate_HF_G_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_middle
+        HTrate_HF_L_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
+        HTrate_HF_L_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_middle
+        HTrate_HF_V_S2T_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_middle * np.exp((-1 * dE_S2T_middle) / (k_B * T))
         HTrate_HF_V_T2S_middle = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_middle
+
+    if dE_S2T_lower > 0:
+        HTrate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_lower
+        HTrate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+        HTrate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_lower
+        HTrate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+        HTrate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_lower
+        HTrate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_lower * np.exp((-1 * dE_T2S_lower) / (k_B * T))
+    else:
+        HTrate_HF_G_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_G_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
+        HTrate_HF_G_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_G_T2S_lower
+        HTrate_HF_L_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_L_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
+        HTrate_HF_L_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_L_T2S_lower
+        HTrate_HF_V_S2T_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_SINGLET * FCWD_V_S2T_lower * np.exp((-1 * dE_S2T_lower) / (k_B * T))
         HTrate_HF_V_T2S_lower = 2 * np.pi / hbar_inev * HT_COUPLING_SQUARED_TRIPLET * FCWD_V_T2S_lower
-        # Sublevel averaging w/ thermal corrections
-        HTrate_HF_V_T2S = (HTrate_HF_V_T2S_upper + (HTrate_HF_V_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_V_T2S_lower*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+
+    HTrate_HF_G_S2T = (HTrate_HF_G_S2T_lower + (HTrate_HF_G_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_G_S2T_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+    HTrate_HF_G_T2S = (HTrate_HF_G_T2S_lower + (HTrate_HF_G_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_G_T2S_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+    HTrate_HF_L_S2T = (HTrate_HF_L_S2T_lower + (HTrate_HF_L_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_L_S2T_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+    HTrate_HF_L_T2S = (HTrate_HF_L_T2S_lower + (HTrate_HF_L_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_L_T2S_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+    HTrate_HF_V_S2T = (HTrate_HF_V_S2T_lower + (HTrate_HF_V_S2T_middle*ThermalCorrection1_2) + (HTrate_HF_V_S2T_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
+    HTrate_HF_V_T2S = (HTrate_HF_V_T2S_lower + (HTrate_HF_V_T2S_middle*ThermalCorrection1_2) + (HTrate_HF_V_T2S_upper*ThermalCorrection1_3)) / (1+ThermalCorrection1_2+ThermalCorrection1_3)
 
 # Printing final results
 print()
@@ -1161,11 +1155,39 @@ print("*" * 64)
 print("*" * 13 + "        FRANCK-CONDON REGIME          " + "*" * 13)
 print("*" * 64)
 print()
+if PRINT == 2:
+    print(f"Individual Sublevels:                                                 ")
+    print(f"Gaussian                          S --> T(+) = {rate_HF_G_S2T_upper:.6e} ")
+    print(f"                                  S --> T(0) = {rate_HF_G_S2T_middle:.6e} ")
+    print(f"                                  S --> T(-) = {rate_HF_G_S2T_lower:.6e} ")
+    print(f"                               T(+) --> S    = {rate_HF_G_T2S_upper:.6e} ")
+    print(f"                               T(0) --> S    = {rate_HF_G_T2S_middle:.6e} ")
+    print(f"                               T(-) --> S    = {rate_HF_G_T2S_lower:.6e} ")
+    print()
 print(f"Singlet rate constant (Gaussian)             = {rate_HF_G_S2T:.6e}")
 print(f"Triplet rate constant (Gaussian)             = {rate_HF_G_T2S:.6e}")
+print()
+if PRINT == 2:
+    print(f"Individual Sublevels:                                                 ")
+    print(f"Lorentzian                        S --> T(+) = {rate_HF_L_S2T_upper:.6e} ")
+    print(f"                                  S --> T(0) = {rate_HF_L_S2T_middle:.6e} ")
+    print(f"                                  S --> T(-) = {rate_HF_L_S2T_lower:.6e} ")
+    print(f"                               T(+) --> S    = {rate_HF_L_T2S_upper:.6e} ")
+    print(f"                               T(0) --> S    = {rate_HF_L_T2S_middle:.6e} ")
+    print(f"                               T(-) --> S    = {rate_HF_L_T2S_lower:.6e} ")
+    print()
 print(f"Singlet rate constant (Lorentzian)           = {rate_HF_L_S2T:.6e}")
 print(f"Triplet rate constant (Lorentzian)           = {rate_HF_L_T2S:.6e}")
 print()
+if PRINT == 2:
+    print(f"Individual Sublevels:                                                 ")
+    print(f"Voigt                             S --> T(+) = {rate_HF_V_S2T_upper:.6e} ")
+    print(f"                                  S --> T(0) = {rate_HF_V_S2T_middle:.6e} ")
+    print(f"                                  S --> T(-) = {rate_HF_V_S2T_lower:.6e} ")
+    print(f"                               T(+) --> S    = {rate_HF_V_T2S_upper:.6e} ")
+    print(f"                               T(0) --> S    = {rate_HF_V_T2S_middle:.6e} ")
+    print(f"                               T(-) --> S    = {rate_HF_V_T2S_lower:.6e} ")
+    print()
 print(f"Singlet rate constant (Voigt)                = {rate_HF_V_S2T:.6e}")
 print(f"Triplet rate constant (Voigt)                = {rate_HF_V_T2S:.6e}")
 if HT:
@@ -1174,11 +1196,39 @@ if HT:
     print("*" * 13 + "       HERZBERG-TELLER REGIME         " + "*" * 13)
     print("*" * 64)
     print()
+    if PRINT == 2:
+        print(f"Individual Sublevels:                                                 ")
+        print(f"Gaussian                          S --> T(+) = {HTrate_HF_G_S2T_upper:.6e} ")
+        print(f"                                  S --> T(0) = {HTrate_HF_G_S2T_middle:.6e} ")
+        print(f"                                  S --> T(-) = {HTrate_HF_G_S2T_lower:.6e} ")
+        print(f"                               T(+) --> S    = {HTrate_HF_G_T2S_upper:.6e} ")
+        print(f"                               T(0) --> S    = {HTrate_HF_G_T2S_middle:.6e} ")
+        print(f"                               T(-) --> S    = {HTrate_HF_G_T2S_lower:.6e} ")
+        print()
     print(f"Singlet rate constant (Gaussian)             = {HTrate_HF_G_S2T:.6e}")
     print(f"Triplet rate constant (Gaussian)             = {HTrate_HF_G_T2S:.6e}")
+    print()
+    if PRINT == 2:
+        print(f"Individual Sublevels:                                                 ")
+        print(f"Lorentzian                        S --> T(+) = {HTrate_HF_L_S2T_upper:.6e} ")
+        print(f"                                  S --> T(0) = {HTrate_HF_L_S2T_middle:.6e} ")
+        print(f"                                  S --> T(-) = {HTrate_HF_L_S2T_lower:.6e} ")
+        print(f"                               T(+) --> S    = {HTrate_HF_L_T2S_upper:.6e} ")
+        print(f"                               T(0) --> S    = {HTrate_HF_L_T2S_middle:.6e} ")
+        print(f"                               T(-) --> S    = {HTrate_HF_L_T2S_lower:.6e} ")
+        print()
     print(f"Singlet rate constant (Lorentzian)           = {HTrate_HF_L_S2T:.6e}")
     print(f"Triplet rate constant (Lorentzian)           = {HTrate_HF_L_T2S:.6e}")
     print()
+    if PRINT == 2:
+        print(f"Individual Sublevels:                                                 ")
+        print(f"Voigt                             S --> T(+) = {HTrate_HF_V_S2T_upper:.6e} ")
+        print(f"                                  S --> T(0) = {HTrate_HF_V_S2T_middle:.6e} ")
+        print(f"                                  S --> T(-) = {HTrate_HF_V_S2T_lower:.6e} ")
+        print(f"                               T(+) --> S    = {HTrate_HF_V_T2S_upper:.6e} ")
+        print(f"                               T(0) --> S    = {HTrate_HF_V_T2S_middle:.6e} ")
+        print(f"                               T(-) --> S    = {HTrate_HF_V_T2S_lower:.6e} ")
+        print()
     print(f"Singlet rate constant (Voigt)                = {HTrate_HF_V_S2T:.6e}")
     print(f"Triplet rate constant (Voigt)                = {HTrate_HF_V_T2S:.6e}")
 print("--------------------------------------------------------------")
