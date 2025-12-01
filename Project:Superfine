@@ -240,11 +240,13 @@ parser.add_argument(
 parser.add_argument(
     '--lu',
     type=float,
+    default=0,
     help='Triplet splitting in the reorganisation energy for the upper sublevel, in units of eV. Typically only important for large fields.'
 )
 parser.add_argument(
     '--ll',
     type=float,
+    default=0,
     help='Triplet splitting in the reorganisation energy for the lower sublevel, in units of eV. Typically only important for large fields.'
 )
 parser.add_argument(
